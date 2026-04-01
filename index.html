@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极简待办清单</title>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: #f8f9fa; display: flex; justify-content: center; padding-top: 50px; }
+        .todo-card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 400px; }
+        h2 { margin-top: 0; color: #1a1a1a; text-align: center; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { flex: 1; padding: 12px; border: 2px solid #eee; border-radius: 6px; outline: none; transition: 0.3s; }
+        input:focus { border-color: #4a90e2; }
+        button#add-btn { background: #4a90e2; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        ul { list-style: none; padding: 0; }
+        li { background: #fff; border: 1px solid #eee; margin-bottom: 8px; padding: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        li:hover { transform: translateX(5px); border-color: #4a90e2; }
+        .delete-btn { color: #ff4d4d; cursor: pointer; font-weight: bold; padding: 5px 10px; }
+        .empty-state { text-align: center; color: #aaa; font-size: 14px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="todo-card">
+    <h2>📝 我的任务清单</h2>
+    <div class="input-group">
+        <input type="text" id="todo-input" placeholder="输入新任务...">
+        <button id="add-btn" onclick="addTodo()">添加</button>
+    </div>
+    <ul id="todo-list"></ul>
+    <div id="empty-msg" class="empty-state">暂无任务，开启高效的一天吧！</div>
+</div>
+
+<script>
+    // 1. 初始化：从浏览器的“保险箱”(LocalStorage) 取出之前存的任务
+    let todos = JSON.parse(localStorage.getItem('myTodos')) || [];
+
+    // 2. 渲染函数：把任务数组显示到网页上
+    function render() {
+        const list = document.getElementById('todo-list');
+        const emptyMsg = document.getElementById('empty-msg');
+        list.innerHTML = '';
+        
+        if (todos.length === 0) {
+            emptyMsg.style.display = 'block';
+        } else {
+            emptyMsg.style.display = 'none';
+            todos.forEach((text, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span>${text}</span>
+                    <span class="delete-btn" onclick="deleteTodo(${index})">✕</span>
+                `;
+                list.appendChild(li);
+            });
+        }
+        // 每次渲染都同步存入 LocalStorage
+        localStorage.setItem('myTodos', JSON.stringify(todos));
+    }
+
+    // 3. 添加任务逻辑
+    function addTodo() {
+        const input = document.getElementById('todo-input');
+        if (input.value.trim() !== '') {
+            todos.push(input.value.trim());
+            input.value = '';
+            render();
+        }
+    }
+
+    // 4. 删除任务逻辑
+    function deleteTodo(index) {
+        todos.splice(index, 1);
+        render();
+    }
+
+    // 支持回车键添加
+    document.getElementById('todo-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addTodo();
+    });
+
+    // 页面加载时执行一次渲染
+    render();
+</script>
+
+</body>
+</html>
