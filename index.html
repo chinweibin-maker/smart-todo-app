@@ -3,84 +3,246 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>极简待办清单</title>
+    <title>喵星人超级任务管理系统</title>
     <style>
-        body { font-family: 'Inter', system-ui, sans-serif; background-color: #f8f9fa; display: flex; justify-content: center; padding-top: 50px; }
-        .todo-card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 400px; }
-        h2 { margin-top: 0; color: #1a1a1a; text-align: center; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
-        input { flex: 1; padding: 12px; border: 2px solid #eee; border-radius: 6px; outline: none; transition: 0.3s; }
-        input:focus { border-color: #4a90e2; }
-        button#add-btn { background: #4a90e2; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        ul { list-style: none; padding: 0; }
-        li { background: #fff; border: 1px solid #eee; margin-bottom: 8px; padding: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
-        li:hover { transform: translateX(5px); border-color: #4a90e2; }
-        .delete-btn { color: #ff4d4d; cursor: pointer; font-weight: bold; padding: 5px 10px; }
-        .empty-state { text-align: center; color: #aaa; font-size: 14px; margin-top: 20px; }
+        :root {
+            --primary: #4a90e2; --cat: #ff9f43; --danger: #ff4d4d;
+            --success: #2ecc71; --bg: #f0f2f5;
+        }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; padding: 20px; }
+        .app-container { width: 100%; max-width: 900px; display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+        
+        /* 左侧面板：猫咪状态与日历 */
+        .sidebar { display: flex; flex-direction: column; gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .cat-status { text-align: center; }
+        #cat-avatar { font-size: 80px; margin: 10px 0; display: block; transition: 0.3s; }
+        .exp-bar { width: 100%; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; margin-top: 10px; }
+        #exp-fill { height: 100%; background: var(--cat); width: 0%; transition: 0.5s; }
+        
+        /* 日历简单模拟 */
+        .calendar-mini { font-size: 14px; text-align: center; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; }
+        .day { padding: 5px; border-radius: 5px; cursor: pointer; }
+        .day.today { background: var(--primary); color: white; }
+
+        /* 右侧面板：任务清单 */
+        .main-content { display: flex; flex-direction: column; gap: 20px; }
+        .input-group { display: flex; gap: 10px; }
+        input, select { padding: 12px; border: 2px solid #eee; border-radius: 8px; outline: none; }
+        input { flex: 1; }
+        button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
+        .btn-add { background: var(--primary); color: white; padding: 0 20px; }
+        
+        /* 任务列表样式 */
+        .todo-item { 
+            display: flex; align-items: center; justify-content: space-between; 
+            padding: 15px; border-bottom: 1px solid #eee; transition: 0.3s;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } }
+        .todo-item:hover { background: #fafafa; }
+        .item-info { display: flex; flex-direction: column; gap: 5px; }
+        .tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; color: white; width: fit-content; }
+        .priority-high { background: var(--danger); }
+        .priority-med { background: var(--cat); }
+        .priority-low { background: var(--success); }
+        
+        /* 番茄钟 */
+        .timer-box { display: flex; align-items: center; gap: 15px; background: #1a1a2e; color: white; padding: 15px; border-radius: 12px; }
+        #timer-display { font-family: monospace; font-size: 24px; color: var(--cat); }
+
+        .done { text-decoration: line-through; opacity: 0.5; }
     </style>
 </head>
 <body>
 
-<div class="todo-card">
-    <h2>📝 我的任务清单</h2>
-    <div class="input-group">
-        <input type="text" id="todo-input" placeholder="输入新任务...">
-        <button id="add-btn" onclick="addTodo()">添加</button>
+<div class="app-container">
+    <div class="sidebar">
+        <div class="card cat-status">
+            <div id="cat-avatar">🐱</div>
+            <strong id="cat-name">初级小奶猫</strong>
+            <div class="exp-bar"><div id="exp-fill"></div></div>
+            <p style="font-size: 12px; color: #666; margin-top: 5px;">等级: <span id="cat-lv">1</span> | 好感度: <span id="cat-love">0</span></p>
+            <p id="cat-msg" style="font-size: 13px; font-style: italic; color: #ff9f43;">"主人，快去做任务喂我！"</p>
+        </div>
+
+        <div class="card">
+            <div class="timer-box">
+                <div>🍅 <span id="timer-display">25:00</span></div>
+                <button onclick="toggleTimer()" id="timer-btn" style="background:var(--cat); color:white; padding:5px 10px;">开始专注</button>
+            </div>
+        </div>
+
+        <div class="card calendar-mini">
+            <strong>📅 <span id="current-month">4月</span></strong>
+            <div class="calendar-grid" id="calendar-days">
+                </div>
+        </div>
     </div>
-    <ul id="todo-list"></ul>
-    <div id="empty-msg" class="empty-state">暂无任务，开启高效的一天吧！</div>
+
+    <div class="main-content">
+        <div class="card">
+            <h2>📝 任务调度中心</h2>
+            <div class="input-group">
+                <input type="text" id="todo-input" placeholder="输入新任务内容...">
+                <select id="todo-priority">
+                    <option value="low">低优先级</option>
+                    <option value="med" selected>中优先级</option>
+                    <option value="high">高优先级</option>
+                </select>
+                <button class="btn-add" onclick="addTodo()">添加</button>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <ul id="todo-list" style="list-style: none; padding:0;"></ul>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
-    // 1. 初始化：从浏览器的“保险箱”(LocalStorage) 取出之前存的任务
-    let todos = JSON.parse(localStorage.getItem('myTodos')) || [];
+    // --- 1. 数据持久化 ---
+    let state = JSON.parse(localStorage.getItem('catTodoState')) || {
+        todos: [],
+        exp: 0,
+        lv: 1,
+        love: 0
+    };
 
-    // 2. 渲染函数：把任务数组显示到网页上
-    function render() {
-        const list = document.getElementById('todo-list');
-        const emptyMsg = document.getElementById('empty-msg');
-        list.innerHTML = '';
-        
-        if (todos.length === 0) {
-            emptyMsg.style.display = 'block';
-        } else {
-            emptyMsg.style.display = 'none';
-            todos.forEach((text, index) => {
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span>${text}</span>
-                    <span class="delete-btn" onclick="deleteTodo(${index})">✕</span>
-                `;
-                list.appendChild(li);
-            });
+    // --- 2. 猫咪逻辑 ---
+    function updateCat() {
+        const fill = document.getElementById('exp-fill');
+        const lvDisplay = document.getElementById('cat-lv');
+        const avatar = document.getElementById('cat-avatar');
+        const name = document.getElementById('cat-name');
+
+        // 升级逻辑
+        if (state.exp >= 100) {
+            state.lv++;
+            state.exp = 0;
+            alert("🎉 你的猫咪进化了！");
         }
-        // 每次渲染都同步存入 LocalStorage
-        localStorage.setItem('myTodos', JSON.stringify(todos));
+
+        fill.style.width = state.exp + "%";
+        lvDisplay.innerText = state.lv;
+        
+        if(state.lv < 3) { avatar.innerText = "🐱"; name.innerText = "初级小奶猫"; }
+        else if(state.lv < 6) { avatar.innerText = "🐈"; name.innerText = "活泼的大猫"; }
+        else { avatar.innerText = "🐯"; name.innerText = "任务统治者"; }
+
+        save();
     }
 
-    // 3. 添加任务逻辑
+    // --- 3. 任务逻辑 ---
     function addTodo() {
         const input = document.getElementById('todo-input');
-        if (input.value.trim() !== '') {
-            todos.push(input.value.trim());
-            input.value = '';
-            render();
-        }
-    }
+        const prio = document.getElementById('todo-priority').value;
+        if (!input.value.trim()) return;
 
-    // 4. 删除任务逻辑
-    function deleteTodo(index) {
-        todos.splice(index, 1);
+        const newTodo = {
+            id: Date.now(),
+            text: input.value,
+            priority: prio,
+            completed: false,
+            date: new Date().toLocaleDateString()
+        };
+
+        state.todos.push(newTodo);
+        input.value = '';
         render();
     }
 
-    // 支持回车键添加
-    document.getElementById('todo-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') addTodo();
-    });
+    function toggleTodo(id) {
+        const todo = state.todos.find(t => t.id === id);
+        if (todo && !todo.completed) {
+            todo.completed = true;
+            state.exp += 20; // 完成任务加经验
+            state.love += 5;
+            document.getElementById('cat-msg').innerText = "太棒了！继续保持喵！";
+        }
+        render();
+        updateCat();
+    }
 
-    // 页面加载时执行一次渲染
+    function deleteTodo(id) {
+        state.todos = state.todos.filter(t => t.id !== id);
+        render();
+    }
+
+    function render() {
+        const list = document.getElementById('todo-list');
+        list.innerHTML = '';
+        
+        state.todos.forEach(t => {
+            const li = document.createElement('li');
+            li.className = `todo-item ${t.completed ? 'done' : ''}`;
+            li.innerHTML = `
+                <div class="item-info">
+                    <span class="tag priority-${t.priority}">${t.priority.toUpperCase()}</span>
+                    <strong>${t.text}</strong>
+                    <small style="color:#999">${t.date}</small>
+                </div>
+                <div>
+                    ${!t.completed ? `<button onclick="toggleTodo(${t.id})" style="color:var(--success); background:none; font-size:20px;">✓</button>` : ''}
+                    <button onclick="deleteTodo(${t.id})" style="color:var(--danger); background:none; font-size:20px;">✕</button>
+                </div>
+            `;
+            list.appendChild(li);
+        });
+        save();
+    }
+
+    // --- 4. 番茄钟逻辑 ---
+    let timerInterval;
+    let timeLeft = 1500;
+    function toggleTimer() {
+        const btn = document.getElementById('timer-btn');
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            btn.innerText = "继续专注";
+        } else {
+            btn.innerText = "暂停中...";
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert("专注完成！猫咪很欣慰！");
+                    state.exp += 50;
+                    updateCat();
+                    timeLeft = 1500;
+                }
+            }, 1000);
+        }
+    }
+
+    function updateTimerDisplay() {
+        const mins = Math.floor(timeLeft / 60);
+        const secs = timeLeft % 60;
+        document.getElementById('timer-display').innerText = 
+            `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // --- 5. 初始化日历 ---
+    function initCalendar() {
+        const grid = document.getElementById('calendar-days');
+        const today = new Date().getDate();
+        for(let i=1; i<=30; i++) {
+            const d = document.createElement('div');
+            d.className = `day ${i === today ? 'today' : ''}`;
+            d.innerText = i;
+            grid.appendChild(d);
+        }
+    }
+
+    function save() { localStorage.setItem('catTodoState', JSON.stringify(state)); }
+
+    // 启动！
+    initCalendar();
     render();
+    updateCat();
 </script>
 
 </body>
